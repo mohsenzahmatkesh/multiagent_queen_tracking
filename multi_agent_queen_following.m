@@ -1,6 +1,11 @@
 close all
-% Starting point positions
-numRobots = 6;                              
+
+numRobots = 6;
+
+beeData = readmatrix('bee_pose.txt');
+bag = rosbag('h0xy_queen_2024-07-03-09-00-02.bag');
+% disp(bag.AvailableTopics);
+bSel = select(bag, 'Topic', '/queen_position');
 
 % --- Circular initial formation ---
 centerX = 20;      % circle center (x)
