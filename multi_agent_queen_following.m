@@ -1,11 +1,17 @@
+clc
+clear
 close all
 
 numRobots = 6;
 
 beeData = readmatrix('bee_pose.txt');
-bag = rosbag('h0xy_queen_2024-07-03-09-00-02.bag');
-% disp(bag.AvailableTopics);
-bSel = select(bag, 'Topic', '/queen_position');
+queen_time = beeData(1:100,1);
+queenX = beeData(1:100,2)*1000;
+queenY = beeData(1:100,3)*1000;
+queen_psi = beeData(1:100,4)*180/pi;
+% bag = rosbag('h0xy_queen_2024-07-03-09-00-02.bag');
+% % disp(bag.AvailableTopics);
+% bSel = select(bag, 'Topic', '/queen_position');
 
 % --- Circular initial formation ---
 centerX = 20;      % circle center (x)
@@ -46,21 +52,21 @@ timeDistanceData = [];
 computationalEfficiencyData = [];
 
 %% Hyperparameter settings
-if flag == 1
-    Kaat = 0.1;
-    Krep = 100;
-    P0 = 25;
-    StepRate = 0.1;
-    Epoch = 3000;
-    de = 20;
-else
+% if flag == 1
+%     Kaat = 0.1;
+%     Krep = 100;
+%     P0 = 25;
+%     StepRate = 0.1;
+%     Epoch = 3000;
+%     de = 20;
+% else
     Kaat = 0.5;     % Increased Attraction slightly for tighter formation
     Krep = 1.5;
     P0 = 25;
     StepRate = 0.1; 
-    Epoch = 5000;   
+    Epoch = 2000;   
     de = 20;
-end
+% end
 
 %% Plotting Initial Setup
 figure;
@@ -135,6 +141,9 @@ while true
         % Add random disturbance
         Fxsum = Fxsum + (rand - 0.5) * 0.1;
         Fysum = Fysum + (rand - 0.5) * 0.1;
+
+        % Fxsum = 0;
+        % Fysum = 0;
         
         % --- KEY CHANGE: ADD FEEDFORWARD TARGET VELOCITY ---
         % We add 'targetMoveVec' directly to the position.
@@ -156,8 +165,13 @@ while true
     
     % Check for termination
     CountFlag = CountFlag + 1;
-    if CountFlag >= Epoch
-        fprintf("Timeout\n");
+    % if CountFlag >= Epoch
+    %     fprintf("Timeout\n");
+    %     break;
+    % end
+
+    if abs(CurrentTarget(1) - TargetEnd(1)) < 0.02
+        fprintf("Reached\n");
         break;
     end
     

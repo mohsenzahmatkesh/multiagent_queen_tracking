@@ -1,6 +1,7 @@
 % 1. Load the bag and select the specific topic
 bag = rosbag('h0xy_queen_2024-07-03-09-00-02.bag');
-bSel = select(bag, 'Topic', '/hive_0/xy_0/queen_position');
+bSel = select(bag, 'Topic', '/hive_0/xy_1/xy_position');
+disp(bag.AvailableTopics);
 
 % 2. Read all messages as structures (this handles the custom message type)
 msgs = readMessages(bSel, 'DataFormat', 'struct');
