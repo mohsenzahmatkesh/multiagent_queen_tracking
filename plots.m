@@ -2,7 +2,7 @@ close all
 
 % --- PLOT 1: PATHS ---
 for i = 1:numRobots
-    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'r--', 'LineWidth', 0.2);
+    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'r', 'LineWidth', 0.2);
 end
 % title('Path Planning with Real Data Tracking');
 
@@ -10,16 +10,18 @@ end
 figure(2); 
 hold on; box on
 colors = lines(numRobots);
-plot(psiHistory(:,1), psiHistory(:,2), 'k', 'LineWidth', 1.5, 'DisplayName', 'Queen \psi');
+plot(psiHistory(:,1), psiHistory(:,2), 'k', 'LineWidth', 2, 'DisplayName', 'Queen \psi');
 for i = 1:numRobots
-    plot(psiHistory(:,1), psiHistory(:,2+i), '--', 'Color', colors(i,:), 'LineWidth', 2, 'DisplayName', sprintf('Robot %d', i));
+    plot(psiHistory(:,1), psiHistory(:,2+i), 'Color', colors(i,:), 'LineWidth',1.7, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
 ylabel('Heading Angle (deg)');
 ylim([-180, 180]); 
 yticks(-180:60:180);
 % title('Orientation Tracking: Robots following Queen \psi in Sector');
-legend('show', 'Location', 'northeast', 'NumColumns', 4);
+lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
+lgd.FontSize = 8;        % try 6–9
+lgd.ItemTokenSize = [10 8];
 hold off;
 
 % --- PREPARE DATA ---
@@ -37,13 +39,15 @@ set(gcf, 'Position', figSize);
 hold on; box on
 plot(qX_plot, qY_plot, 'k-', 'LineWidth', 0.5, 'DisplayName', 'Queen');
 for i = 1:numRobots
-    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), '--', 'Color', colors(i,:), 'LineWidth', 0.2, 'DisplayName', sprintf('Robot %d', i));
+    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 0.2, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('X Position (mm)');
 ylabel('Y Position (mm)');
 % title('2D Trajectories');
 % 'NumColumns', 2 -> Creates 2 columns (2 items per row)
-legend('show', 'Location', 'northeast'); 
+lgd = legend('show', 'Location', 'southeast');
+lgd.FontSize = 8;        % try 6–9
+lgd.ItemTokenSize = [10 8];
 axis equal;
 
 % --- PLOT 4: FORMATION ERROR ---
@@ -52,12 +56,14 @@ set(gcf, 'Position', figSize);
 hold on; box on
 for i = 1:numRobots
     distError = sqrt((robotPaths{i}(:,1) - qX_plot).^2 + (robotPaths{i}(:,2) - qY_plot).^2);
-    plot(time_plot, distError, 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Robot %d', i));
+    plot(time_plot, distError, 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
 ylabel('Distance to Queen (mm)');
 % title('Formation Error');
-legend('show', 'Location', 'northeast', 'NumColumns', 2);
+lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
+lgd.FontSize = 8;        % try 6–9
+lgd.ItemTokenSize = [10 8];
 
 % --- PLOT 5: X & Y POSITIONS (Subplots) ---
 figure(5);
@@ -67,18 +73,20 @@ subplot(2,1,1);
 hold on; box on
 plot(time_plot, qX_plot, 'k-', 'LineWidth', 2, 'DisplayName', 'Queen X');
 for i = 1:numRobots
-    plot(time_plot, robotPaths{i}(:,1), '--', 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Robot %d', i));
+    plot(time_plot, robotPaths{i}(:,1), 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 ylabel('X Position (mm)');
 % title('X Position Tracking');
-legend('show', 'Location', 'northeast', 'NumColumns', 2);
+lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
+lgd.FontSize = 8;        % try 6–9
+lgd.ItemTokenSize = [10 8];
 
 % Subplot 2: Y Positions
 subplot(2,1,2);
 hold on; box on
 plot(time_plot, qY_plot, 'k-', 'LineWidth', 2, 'DisplayName', 'Queen Y');
 for i = 1:numRobots
-    plot(time_plot, robotPaths{i}(:,2), '--', 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Robot %d', i));
+    plot(time_plot, robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
 ylabel('Y Position (mm)');
@@ -124,14 +132,16 @@ for i = 1:numRobots
     u = arrowLen * cosd(rPsi);
     v = arrowLen * sind(rPsi);
     
-    quiver(rX, rY, u, v, 0, 'Color', colors(i,:), 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', sprintf('Robot %d', i));
+    quiver(rX, rY, u, v, 0, 'Color', colors(i,:), 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', sprintf('Agent %d', i));
     scatter(rX, rY, robotSize, colors(i,:), 'filled', 'HandleVisibility', 'off'); 
 end
 
 xlabel('X Position (mm)');
 ylabel('Y Position (mm)');
 % title(sprintf('Snapshot at Time Step (t = %.2fs)', time_plot(idx)));
-legend('show', 'Location', 'northeast', 'NumColumns', 2);
+lgd = legend('show', 'Location', 'southeast');
+lgd.FontSize = 8;        % try 6–9
+lgd.ItemTokenSize = [10 8];
 
 % --- SUBPLOT 2: FINAL TIME STEP ---
 subplot(2,1,2);
