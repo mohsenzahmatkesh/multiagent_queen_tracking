@@ -95,85 +95,125 @@ ylabel('Y Position (mm)');
 % ==========================================================
 %      ADD/REPLACE THIS BLOCK FOR FIGURE 6
 % ==========================================================
-% --- PLOT 6: SNAPSHOTS WITH ORIENTATION ARROWS ---
+% --- PLOT 6: SNAPSHOTS WITH OVALS (HORIZONTAL LAYOUT) ---
 figure(6);
-set(gcf, 'Position', [100, 100, 600, 800]); 
+set(gcf, 'Position', [100, 100, 1200, 400]); 
 
-% --- SETTINGS FOR "MUCH BIGGER" VISUALS ---
-arrowLen = 15;        % Set to 15 for visibility
-queenSize = 400;      
-robotSize = 250;      
-lineWidth = 2.5;      
-
-% --- SUBPLOT 1: TIME STEP 10 ---
-subplot(2,1,1);
-hold on;  box on;
-axis equal;
-
-% 1. Determine Index 
-idx = min(150, simSteps);
-
-% 2. Plot Queen Arrow (Outbound)
-qX = qX_plot(idx);
-qY = qY_plot(idx);
-qPsi = psiHistory(idx, 2); 
-u = arrowLen * cosd(qPsi);
-v = arrowLen * sind(qPsi);
-% Outbound: Start at (qX, qY)
-quiver(qX, qY, u, v, 0, 'k', 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', 'Queen');
-scatter(qX, qY, queenSize, 'k', 'filled', 'HandleVisibility', 'off'); 
-
-% 3. Plot Robot Arrows (Outbound)
+% --- 1. CALCULATE GLOBAL LIMITS ---
+all_X = qX_plot;
+all_Y = qY_plot;
 for i = 1:numRobots
-    rX = robotPaths{i}(idx, 1);
-    rY = robotPaths{i}(idx, 2);
-    rPsi = psiHistory(idx, 2+i); 
+    all_X = [all_X; robotPaths{i}(:,1)];
+    all_Y = [all_Y; robotPaths{i}(:,2)];
+end
+globalXLim = [min(all_X)-5, max(all_X)+5];
+globalYLim = [min(all_Y)-5, max(all_Y)+5];
+
+% --- SETTINGS FOR VISUALS ---
+q_a = 3.5; q_b = 2;     % Queen Dimensions
+r_a = 3; r_b = 1.5;     % Robot Dimensions
+t_param = linspace(0, 2*pi, 50); 
+snapshotIndices = [min(150, simSteps), 380, 790]; 
+
+% Use TiledLayout for narrow borders
+tlo = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+for k = 1:3
+    nexttile;
+    hold on; box on;
+    axis equal;
     
-    u = arrowLen * cosd(rPsi);
-    v = arrowLen * sind(rPsi);
+    % Set Axes Font Size to match standard MATLAB defaults (usually 10-11)
+    set(gca, 'FontSize', 10, 'LineWidth', 1); 
     
-    quiver(rX, rY, u, v, 0, 'Color', colors(i,:), 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', sprintf('Agent %d', i));
-    scatter(rX, rY, robotSize, colors(i,:), 'filled', 'HandleVisibility', 'off'); 
+    idx = snapshotIndices(k);
+    
+    % --- PLOT QUEEN (Black Oval) ---
+    qX = qX_plot(idx);
+    qY = qY_plot(idx);
+    qPsi = psiHistory(idx, 2); 
+    
+    X_ell = q_a * cos(t_param);
+    Y_ell = q_b * sin(t_param);
+    R = [cosd(qPsi), -sind(qPsi); sind(qPsi), cosd(qPsi)];
+    coords = R * [X_ell; Y_ell];
+    
+    % LOGIC: Only show Queen in legend for the first plot (k=1)
+    if k == 1
+        fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'DisplayName', 'Queen');
+    else
+        fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'HandleVisibility', 'off');
+    end
+    
+    % --- PLOT ROBOTS ---
+    hasPlottedRed = false; 
+    hasPlottedGold = false;
+    
+    for i = 1:numRobots
+        rX = robotPaths{i}(idx, 1);
+        rY = robotPaths{i}(idx, 2);
+        rPsi = psiHistory(idx, 2+i); 
+        
+        % Check if Head-on (Active)
+        angleDiff = mod(qPsi - robotFormationAngles(i) + 180, 360) - 180;
+        isHeadOn = (abs(angleDiff) <= 40);
+        
+        % OVAL COORDINATES
+        X_ell = r_a * cos(t_param);
+        Y_ell = r_b * sin(t_param);
+        R = [cosd(rPsi), -sind(rPsi); sind(rPsi), cosd(rPsi)];
+        coords = R * [X_ell; Y_ell];
+        
+        if isHeadOn
+            agentColor = [1, 0.84, 0]; % Gold
+            legendName = sprintf('Head-on (Pos: %.0f^{\\circ})', robotFormationAngles(i));
+            
+            % LOGIC: Always show Gold legend for the specific agent in this snapshot
+            if ~hasPlottedGold
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'DisplayName', legendName);
+                hasPlottedGold = true;
+            else
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'HandleVisibility', 'off');
+            end
+        else
+            agentColor = 'r';          % Red
+            
+            % LOGIC: Only show "Agents" legend in the first plot (k=1)
+            if k == 1 && ~hasPlottedRed
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'DisplayName', 'Agents');
+                hasPlottedRed = true;
+            else
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'HandleVisibility', 'off');
+            end
+        end
+    end
+    
+    % --- APPLY LIMITS & LABELS ---
+    xlim(globalXLim);
+    ylim(globalYLim);
+    xlabel('X Position (mm)');
+    title(sprintf('t = %.2fs', time_plot(idx)));
+    
+    % Y-Axis Logic: Show label only on first plot
+    if k == 1
+        ylabel('Y Position (mm)');
+    else
+        set(gca, 'YTickLabel', []);
+    end
+
+    % --- LEGEND STYLING (MATCHING YOUR REFERENCE) ---
+    lgd = legend('show', 'Location', 'northeast');
+    lgd.FontSize = 8;          % Matches your reference
+    lgd.ItemTokenSize = [10 8]; % Matches your reference
 end
 
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
-% title(sprintf('Snapshot at Time Step (t = %.2fs)', time_plot(idx)));
-lgd = legend('show', 'Location', 'southeast');
-lgd.FontSize = 8;        % try 6–9
-lgd.ItemTokenSize = [10 8];
-
-% --- SUBPLOT 2: FINAL TIME STEP ---
-subplot(2,1,2);
-hold on;  box on;
-axis equal;
-
-% 1. Determine Index (Fixed at 999)
-idx = 790; 
-
-% 2. Plot Queen Arrow (Outbound)
-qX = qX_plot(idx);
-qY = qY_plot(idx);
-qPsi = psiHistory(idx, 2); 
-u = arrowLen * cosd(qPsi);
-v = arrowLen * sind(qPsi);
-quiver(qX, qY, u, v, 0, 'k', 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', 'Queen');
-scatter(qX, qY, queenSize, 'k', 'filled', 'HandleVisibility', 'off');
-
-% 3. Plot Robot Arrows (Outbound)
-for i = 1:numRobots
-    rX = robotPaths{i}(idx, 1);
-    rY = robotPaths{i}(idx, 2);
-    rPsi = psiHistory(idx, 2+i); 
-    
-    u = arrowLen * cosd(rPsi);
-    v = arrowLen * sind(rPsi);
-    
-    quiver(rX, rY, u, v, 0, 'Color', colors(i,:), 'LineWidth', lineWidth, 'MaxHeadSize', 0.6, 'DisplayName', sprintf('Robot %d', i));
-    scatter(rX, rY, robotSize, colors(i,:), 'filled', 'HandleVisibility', 'off');
+% --- REPORT TIMESTAMPS ---
+fprintf('\n--- SNAPSHOT TIMESTAMPS ---\n');
+for k = 1:3
+    fprintf('Snapshot %d: %.4f seconds\n', k, time_plot(snapshotIndices(k)));
 end
-
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
-% title(sprintf('Snapshot at time Step (t = %.2fs)', time_plot(idx)));
-% legend('show', 'Location', 'northeast', 'NumColumns', 2);
+fprintf('---------------------------\n');
