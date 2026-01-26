@@ -16,8 +16,8 @@ queen_data(any(isnan(queen_data),2),:) = [];
 
 
 % % 6. Display or use the data
-disp('First 5 rows of Queen Data (X, Y, Phi):');
-disp(queen_data(1:5, :));
+% disp('First 5 rows of Queen Data (X, Y, Phi):');
+% disp(queen_data(1:5, :));
 % 
 % % Optional: Plot the path
 % figure;
