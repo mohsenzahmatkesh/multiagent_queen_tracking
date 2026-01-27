@@ -37,9 +37,9 @@ figSize = [100, 100, 600, 400];
 figure(3);
 set(gcf, 'Position', figSize);
 hold on; box on
-plot(qX_plot, qY_plot, 'k-', 'LineWidth', 0.5, 'DisplayName', 'Queen');
+plot(qX_plot, qY_plot, 'k-', 'LineWidth', 2.5, 'DisplayName', 'Queen');
 for i = 1:numRobots
-    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 0.2, 'DisplayName', sprintf('Agent %d', i));
+    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 1.2, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('X Position (cm)');
 ylabel('Y Position (cm)');
@@ -221,3 +221,32 @@ for k = 1:3
     fprintf('Snapshot %d: %.4f seconds\n', k, time_plot(snapshotIndices(k)));
 end
 fprintf('---------------------------\n');
+
+
+
+
+% ========= SAVE FIGURES (PAPER NAMES) =========
+saveDir = fullfile(pwd, 'plots');
+if ~exist(saveDir, 'dir')
+    mkdir(saveDir);
+end
+
+% Figure 2 – Heading tracking
+exportgraphics(figure(2), fullfile(saveDir,'headingtracking.png'), 'Resolution',300);
+exportgraphics(figure(2), fullfile(saveDir,'headingtracking.eps'), 'ContentType','vector');
+
+% Figure 3 – 2D trajectories
+exportgraphics(figure(3), fullfile(saveDir,'2dtrajectories.png'), 'Resolution',300);
+exportgraphics(figure(3), fullfile(saveDir,'2dtrajectories.eps'), 'ContentType','vector');
+
+% Figure 4 – Trajectory error
+exportgraphics(figure(4), fullfile(saveDir,'trajectoryerror.png'), 'Resolution',300);
+exportgraphics(figure(4), fullfile(saveDir,'trajectoryerror.eps'), 'ContentType','vector');
+
+% Figure 5 – 1D trajectories (X–Y vs time)
+exportgraphics(figure(5), fullfile(saveDir,'1dtrajectories.png'), 'Resolution',300);
+exportgraphics(figure(5), fullfile(saveDir,'1dtrajectories.eps'), 'ContentType','vector');
+
+% Figure 6 – Sequential simulation snapshots
+exportgraphics(figure(6), fullfile(saveDir,'sequentional_simulation.png'), 'Resolution',300);
+exportgraphics(figure(6), fullfile(saveDir,'sequentional_simulation.eps'), 'ContentType','vector');
