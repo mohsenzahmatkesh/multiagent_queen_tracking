@@ -17,6 +17,7 @@ end
 xlabel('Time (s)');
 ylabel('Heading Angle (deg)');
 ylim([-180, 180]); 
+xlim([0, 107.764537600000]); 
 yticks(-180:60:180);
 % title('Orientation Tracking: Robots following Queen \psi in Sector');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
@@ -41,8 +42,9 @@ plot(qX_plot, qY_plot, 'k-', 'LineWidth', 0.5, 'DisplayName', 'Queen');
 for i = 1:numRobots
     plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 0.2, 'DisplayName', sprintf('Agent %d', i));
 end
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
+xlabel('X Position (cm)');
+ylabel('Y Position (cm)');
+ 
 % title('2D Trajectories');
 % 'NumColumns', 2 -> Creates 2 columns (2 items per row)
 lgd = legend('show', 'Location', 'southeast');
@@ -95,113 +97,125 @@ ylabel('Y Position (mm)');
 % ==========================================================
 %      ADD/REPLACE THIS BLOCK FOR FIGURE 6
 % ==========================================================
-% --- PLOT 6: SNAPSHOTS WITH OVALS (FIXED LIMITS) ---
+% --- PLOT 6: SNAPSHOTS WITH OVALS (HORIZONTAL LAYOUT) ---
 figure(6);
-set(gcf, 'Position', [100, 100, 600, 800]); 
+set(gcf, 'Position', [100, 100, 1200, 400]); 
 
-% --- 1. CALCULATE GLOBAL LIMITS FOR CONSISTENCY ---
-% We gather all X and Y data to find the max boundaries of the whole simulation
+% --- 1. CALCULATE GLOBAL LIMITS ---
 all_X = qX_plot;
 all_Y = qY_plot;
 for i = 1:numRobots
     all_X = [all_X; robotPaths{i}(:,1)];
     all_Y = [all_Y; robotPaths{i}(:,2)];
 end
-% Add a small padding (e.g., 5mm)
 globalXLim = [min(all_X)-5, max(all_X)+5];
 globalYLim = [min(all_Y)-5, max(all_Y)+5];
 
 % --- SETTINGS FOR VISUALS ---
-q_a = 3.; q_b = 2;     % Queen Dimensions
-r_a = 3; r_b = 1.5;   % Robot Dimensions
+q_a = 3.5; q_b = 2;     % Queen Dimensions
+r_a = 3; r_b = 1.5;     % Robot Dimensions
+t_param = linspace(0, 2*pi, 50); 
+snapshotIndices = [min(150, simSteps), 380, 790]; 
 
-% --- SUBPLOT 1: TIME STEP 10 (or 150) ---
-subplot(2,1,1);
-hold on; box on;
-axis equal;
+% Use TiledLayout for narrow borders
+tlo = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-% Determine Index 
-idx = min(150, simSteps);
-
-% Plot Queen (Black Oval)
-qX = qX_plot(idx);
-qY = qY_plot(idx);
-qPsi = psiHistory(idx, 2); 
-
-t = linspace(0, 2*pi, 50);
-X_ell = q_a * cos(t);
-Y_ell = q_b * sin(t);
-R = [cosd(qPsi), -sind(qPsi); sind(qPsi), cosd(qPsi)];
-coords = R * [X_ell; Y_ell];
-fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'DisplayName', 'Queen');
-
-% Plot Robots (Red Ovals)
-for i = 1:numRobots
-    rX = robotPaths{i}(idx, 1);
-    rY = robotPaths{i}(idx, 2);
-    rPsi = psiHistory(idx, 2+i); 
+for k = 1:3
+    nexttile;
+    hold on; box on;
+    axis equal;
     
-    X_ell = r_a * cos(t);
-    Y_ell = r_b * sin(t);
-    R = [cosd(rPsi), -sind(rPsi); sind(rPsi), cosd(rPsi)];
+    % Set Axes Font Size to match standard MATLAB defaults (usually 10-11)
+    set(gca, 'FontSize', 10, 'LineWidth', 1); 
+    
+    idx = snapshotIndices(k);
+    
+    % --- PLOT QUEEN (Black Oval) ---
+    qX = qX_plot(idx);
+    qY = qY_plot(idx);
+    qPsi = psiHistory(idx, 2); 
+    
+    X_ell = q_a * cos(t_param);
+    Y_ell = q_b * sin(t_param);
+    R = [cosd(qPsi), -sind(qPsi); sind(qPsi), cosd(qPsi)];
     coords = R * [X_ell; Y_ell];
     
-    if i == 1
-        fill(coords(1,:) + rX, coords(2,:) + rY, 'r', 'EdgeColor', 'none', 'DisplayName', 'Agents');
+    % LOGIC: Only show Queen in legend for the first plot (k=1)
+    if k == 1
+        fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'DisplayName', 'Queen');
     else
-        fill(coords(1,:) + rX, coords(2,:) + rY, 'r', 'EdgeColor', 'none', 'HandleVisibility', 'off');
+        fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'HandleVisibility', 'off');
     end
+    
+    % --- PLOT ROBOTS ---
+    hasPlottedRed = false; 
+    hasPlottedGold = false;
+    
+    for i = 1:numRobots
+        rX = robotPaths{i}(idx, 1);
+        rY = robotPaths{i}(idx, 2);
+        rPsi = psiHistory(idx, 2+i); 
+        
+        % Check if Head-on (Active)
+        angleDiff = mod(qPsi - robotFormationAngles(i) + 180, 360) - 180;
+        isHeadOn = (abs(angleDiff) <= 40);
+        
+        % OVAL COORDINATES
+        X_ell = r_a * cos(t_param);
+        Y_ell = r_b * sin(t_param);
+        R = [cosd(rPsi), -sind(rPsi); sind(rPsi), cosd(rPsi)];
+        coords = R * [X_ell; Y_ell];
+        
+        if isHeadOn
+            agentColor = [1, 0.84, 0]; % Gold
+            legendName = sprintf('Head-on (Pos: %.0f^{\\circ})', robotFormationAngles(i));
+            
+            % LOGIC: Always show Gold legend for the specific agent in this snapshot
+            if ~hasPlottedGold
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'DisplayName', legendName);
+                hasPlottedGold = true;
+            else
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'HandleVisibility', 'off');
+            end
+        else
+            agentColor = 'r';          % Red
+            
+            % LOGIC: Only show "Agents" legend in the first plot (k=1)
+            if k == 1 && ~hasPlottedRed
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'DisplayName', 'Agents');
+                hasPlottedRed = true;
+            else
+                fill(coords(1,:) + rX, coords(2,:) + rY, agentColor, ...
+                    'EdgeColor', 'none', 'HandleVisibility', 'off');
+            end
+        end
+    end
+    
+    % --- APPLY LIMITS & LABELS ---
+    xlim(globalXLim);
+    ylim(globalYLim);
+    xlabel('X Position (mm)');
+    title(sprintf('t = %.2fs', time_plot(idx)));
+    
+    % Y-Axis Logic: Show label only on first plot
+    if k == 1
+        ylabel('Y Position (mm)');
+    else
+        set(gca, 'YTickLabel', []);
+    end
+
+    % --- LEGEND STYLING (MATCHING YOUR REFERENCE) ---
+    lgd = legend('show', 'Location', 'northeast');
+    lgd.FontSize = 8;          % Matches your reference
+    lgd.ItemTokenSize = [10 8]; % Matches your reference
 end
 
-% APPLY GLOBAL LIMITS
-xlim(globalXLim);
-ylim(globalYLim);
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
-lgd = legend('show', 'Location', 'southeast');
-lgd.FontSize = 8;        
-lgd.ItemTokenSize = [15 15]; 
-
-% --- SUBPLOT 2: FINAL TIME STEP ---
-subplot(2,1,2);
-hold on; box on;
-axis equal;
-
-% Determine Index 
-idx = 790; 
-
-% Plot Queen (Black Oval)
-qX = qX_plot(idx);
-qY = qY_plot(idx);
-qPsi = psiHistory(idx, 2); 
-
-X_ell = q_a * cos(t);
-Y_ell = q_b * sin(t);
-R = [cosd(qPsi), -sind(qPsi); sind(qPsi), cosd(qPsi)];
-coords = R * [X_ell; Y_ell];
-fill(coords(1,:) + qX, coords(2,:) + qY, 'k', 'EdgeColor', 'none', 'DisplayName', 'Queen');
-
-% Plot Robots (Red Ovals)
-for i = 1:numRobots
-    rX = robotPaths{i}(idx, 1);
-    rY = robotPaths{i}(idx, 2);
-    rPsi = psiHistory(idx, 2+i); 
-    
-    X_ell = r_a * cos(t);
-    Y_ell = r_b * sin(t);
-    R = [cosd(rPsi), -sind(rPsi); sind(rPsi), cosd(rPsi)];
-    coords = R * [X_ell; Y_ell];
-    
-    if i == 1
-        fill(coords(1,:) + rX, coords(2,:) + rY, 'r', 'EdgeColor', 'none', 'DisplayName', 'Agents');
-    else
-        fill(coords(1,:) + rX, coords(2,:) + rY, 'r', 'EdgeColor', 'none', 'HandleVisibility', 'off');
-    end
+% --- REPORT TIMESTAMPS ---
+fprintf('\n--- SNAPSHOT TIMESTAMPS ---\n');
+for k = 1:3
+    fprintf('Snapshot %d: %.4f seconds\n', k, time_plot(snapshotIndices(k)));
 end
-
-% APPLY GLOBAL LIMITS
-xlim(globalXLim);
-ylim(globalYLim);
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
-legend('show', 'Location', 'northeast');
+fprintf('---------------------------\n');

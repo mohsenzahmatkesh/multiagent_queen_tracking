@@ -17,6 +17,7 @@ end
 xlabel('Time (s)');
 ylabel('Heading Angle (deg)');
 ylim([-180, 180]); 
+xlim([0, 107.764537600000]); 
 yticks(-180:60:180);
 % title('Orientation Tracking: Robots following Queen \psi in Sector');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
@@ -30,7 +31,6 @@ qX_plot = queenX(1:simSteps);
 qY_plot = queenY(1:simSteps);
 time_plot = queen_time(1:simSteps);
 colors = lines(numRobots); 
-% Standard Figure Size [left, bottom, width, height]
 figSize = [100, 100, 600, 400];
 
 % --- PLOT 3: 2D TRAJECTORIES (Map View) ---
@@ -41,8 +41,9 @@ plot(qX_plot, qY_plot, 'k-', 'LineWidth', 0.5, 'DisplayName', 'Queen');
 for i = 1:numRobots
     plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 0.2, 'DisplayName', sprintf('Agent %d', i));
 end
-xlabel('X Position (mm)');
-ylabel('Y Position (mm)');
+xlabel('X Position (cm)');
+ylabel('Y Position (cm)');
+ 
 % title('2D Trajectories');
 % 'NumColumns', 2 -> Creates 2 columns (2 items per row)
 lgd = legend('show', 'Location', 'southeast');
@@ -59,7 +60,8 @@ for i = 1:numRobots
     plot(time_plot, distError, 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
-ylabel('Distance to Queen (mm)');
+ylabel('Distance to Queen (cm)');
+xlim([0, 107.764537600000]);
 % title('Formation Error');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
 lgd.FontSize = 8;        % try 6–9
@@ -75,7 +77,8 @@ plot(time_plot, qX_plot, 'k-', 'LineWidth', 2, 'DisplayName', 'Queen X');
 for i = 1:numRobots
     plot(time_plot, robotPaths{i}(:,1), 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
-ylabel('X Position (mm)');
+ylabel('X Position (cm)');
+xlim([0, 107.764537600000]);
 % title('X Position Tracking');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
 lgd.FontSize = 8;        % try 6–9
@@ -89,7 +92,8 @@ for i = 1:numRobots
     plot(time_plot, robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
-ylabel('Y Position (mm)');
+ylabel('Y Position (cm)');
+xlim([0, 107.764537600000]);
 % title('Y Position Tracking');
 % legend('show', 'Location', 'northeast', 'NumColumns', 2);
 % ==========================================================
@@ -110,10 +114,10 @@ globalXLim = [min(all_X)-5, max(all_X)+5];
 globalYLim = [min(all_Y)-5, max(all_Y)+5];
 
 % --- SETTINGS FOR VISUALS ---
-q_a = 3.5; q_b = 2;     % Queen Dimensions
-r_a = 3; r_b = 1.5;     % Robot Dimensions
+q_a = 2.8; q_b = 1.5;     % Queen Dimensions
+r_a = 2.5; r_b = 1.5;     % Robot Dimensions
 t_param = linspace(0, 2*pi, 50); 
-snapshotIndices = [min(150, simSteps), 380, 790]; 
+snapshotIndices = [min(680, simSteps), 800, 1850]; 
 
 % Use TiledLayout for narrow borders
 tlo = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
@@ -195,12 +199,12 @@ for k = 1:3
     % --- APPLY LIMITS & LABELS ---
     xlim(globalXLim);
     ylim(globalYLim);
-    xlabel('X Position (mm)');
+    xlabel('X Position (cm)');
     title(sprintf('t = %.2fs', time_plot(idx)));
     
     % Y-Axis Logic: Show label only on first plot
     if k == 1
-        ylabel('Y Position (mm)');
+        ylabel('Y Position (cm)');
     else
         set(gca, 'YTickLabel', []);
     end

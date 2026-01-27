@@ -7,23 +7,23 @@ numRobots = 6;
 % --- DATA LOADING ---
 % Ensure bee_pose.txt exists in your folder
 beeData = readmatrix('bee_pose.txt');
-beeData2 = readtable('queen_position_extracted.csv');
+beeData2 = readmatrix('hive2_xy0_queen_position_selected_rel167_275.csv');
 
 % Using the first 1000 points
-dataLen = 9900; 
+dataLen = 1926; 
 queen_time = beeData2(1:dataLen,1);
-queen_time = queen_time - queen_time(1);
-queenX = beeData2(1:dataLen,3)*1000;
-queenY = beeData2(1:dataLen,4)*1000;
+queen_time = queen_time - queen_time(1,1);
+queenX = beeData2(1:dataLen,4)*100;
+queenY = beeData2(1:dataLen,5)*100;
 
 % --- MAP TO -180 TO 180 DEGREES ---
-rawPsi = beeData2(1:dataLen,2)*180/pi;
+rawPsi = beeData2(1:dataLen,3)*180/pi;
 queen_psi = mod(rawPsi + 180, 360) - 180;
 
 % --- Circular initial formation ---
 centerX = queenX(1);      
 centerY = queenY(1);      
-radius = 20;       
+radius = 10;       
 theta = linspace(0, 2*pi, numRobots+1);
 theta(end) = [];   
 robotPositions = [centerX + radius*cos(theta)', centerY + radius*sin(theta)'];
