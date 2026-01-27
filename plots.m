@@ -250,3 +250,46 @@ exportgraphics(figure(5), fullfile(saveDir,'1dtrajectories.eps'), 'ContentType',
 % Figure 6 – Sequential simulation snapshots
 exportgraphics(figure(6), fullfile(saveDir,'sequentional_simulation.png'), 'Resolution',300);
 exportgraphics(figure(6), fullfile(saveDir,'sequentional_simulation.eps'), 'ContentType','vector');
+
+
+% 1. Create Headers dynamically based on numRobots
+csvHeaders = {'Snapshot_Index', 'Time_s', 'Queen_X', 'Queen_Y', 'Queen_Psi_deg'};
+for i = 1:numRobots
+    csvHeaders = [csvHeaders, ...
+                  {sprintf('Agent%d_X', i), sprintf('Agent%d_Y', i), sprintf('Agent%d_Psi_deg', i)}];
+end
+
+% 2. Extract Data
+dataMatrix = [];
+
+for k = 1:length(snapshotIndices)
+    idx = snapshotIndices(k);
+    
+    % --- Get Time and Queen Data ---
+    t_val = time_plot(idx);
+    qX_val = qX_plot(idx);
+    qY_val = qY_plot(idx);
+    qPsi_val = psiHistory(idx, 2); % Matches your Figure 6 logic
+    
+    % Start the row
+    row = [idx, t_val, qX_val, qY_val, qPsi_val];
+    
+    % --- Get Agent Data ---
+    for i = 1:numRobots
+        rX_val = robotPaths{i}(idx, 1);
+        rY_val = robotPaths{i}(idx, 2);
+        rPsi_val = psiHistory(idx, 2+i); % Matches your Figure 6 logic
+        
+        row = [row, rX_val, rY_val, rPsi_val];
+    end
+    
+    % Append to matrix
+    dataMatrix = [dataMatrix; row];
+end
+
+% 3. Convert to Table and Save
+T = array2table(dataMatrix, 'VariableNames', csvHeaders);
+csvFileName = fullfile(saveDir, 'snapshot_data.csv');
+writetable(T, csvFileName);
+
+fprintf('Snapshot data saved to: %s\n', csvFileName);
