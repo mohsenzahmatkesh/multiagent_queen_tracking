@@ -1,57 +1,121 @@
 close all
-
-% --- PLOT 1: PATHS ---
-for i = 1:numRobots
-    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'r', 'LineWidth', 0.2);
-end
+% figure(1);
+% % --- PLOT 1: PATHS ---
+% for i = 1:numRobots
+%     plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'r', 'LineWidth', 0.2);
+% end
 % title('Path Planning with Real Data Tracking');
 
-% --- PLOT 2: ANGLE TRACKING ---
+%% --- PLOT 2: ANGLE TRACKING ---
 figure(2); 
+set(gcf, 'Position', figSize);
 hold on; box on
 colors = lines(numRobots);
-plot(psiHistory(:,1), psiHistory(:,2), 'k', 'LineWidth', 2, 'DisplayName', 'Queen \psi');
+
+% --- 1. PLOT QUEEN (With Jump Removal) ---
+qPsi = psiHistory(:,2);
+% excessive difference (e.g. > 300) implies a wrap-around
+jumpThreshold = 300; 
+% Set values to NaN where a jump occurred compared to previous step
+qPsi(abs([0; diff(qPsi)]) > jumpThreshold) = NaN; 
+
+plot(psiHistory(:,1), qPsi, 'k', 'LineWidth', 2, 'DisplayName', 'Queen \psi');
+
+% --- 2. PLOT AGENTS (With Jump Removal) ---
 for i = 1:numRobots
-    plot(psiHistory(:,1), psiHistory(:,2+i), 'Color', colors(i,:), 'LineWidth',1.7, 'DisplayName', sprintf('Agent %d', i));
+    aPsi = psiHistory(:,2+i);
+    % Apply same NaN logic to agents
+    aPsi(abs([0; diff(aPsi)]) > jumpThreshold) = NaN;
+    
+    plot(psiHistory(:,1), aPsi, 'Color', colors(i,:), 'LineWidth', 1.7, ...
+        'DisplayName', sprintf('Agent %d', i));
 end
+
 xlabel('Time (s)');
 ylabel('Heading Angle (deg)');
 ylim([-180, 180]); 
 xlim([0, 107.764537600000]); 
 yticks(-180:60:180);
-% title('Orientation Tracking: Robots following Queen \psi in Sector');
+
+% title('Orientation Tracking');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
 lgd.FontSize = 8;        % try 6–9
 lgd.ItemTokenSize = [10 8];
 hold off;
 
-% --- PREPARE DATA ---
-simSteps = size(robotPaths{1}, 1); 
-qX_plot = queenX(1:simSteps);
-qY_plot = queenY(1:simSteps);
-time_plot = queen_time(1:simSteps);
-colors = lines(numRobots); 
-figSize = [100, 100, 600, 400];
-
-% --- PLOT 3: 2D TRAJECTORIES (Map View) ---
+%% --- PLOT 3: 2D TRAJECTORIES (Map View - Evolution) ---
 figure(3);
-set(gcf, 'Position', figSize);
-hold on; box on
-plot(qX_plot, qY_plot, 'k-', 'LineWidth', 2.5, 'DisplayName', 'Queen');
-for i = 1:numRobots
-    plot(robotPaths{i}(:,1), robotPaths{i}(:,2), 'Color', colors(i,:), 'LineWidth', 1.2, 'DisplayName', sprintf('Agent %d', i));
-end
-xlabel('X Position (cm)');
-ylabel('Y Position (cm)');
- 
-% title('2D Trajectories');
-% 'NumColumns', 2 -> Creates 2 columns (2 items per row)
-lgd = legend('show', 'Location', 'southeast');
-lgd.FontSize = 8;        % try 6–9
-lgd.ItemTokenSize = [10 8];
-axis equal;
+% Adjusted Height to 600 to reduce vertical white space gaps with 'axis equal'
+set(gcf, 'Position', [100, 100, 800, 600]); 
 
-% --- PLOT 4: FORMATION ERROR ---
+% 1. CALCULATE GLOBAL LIMITS 
+all_X = qX_plot;
+all_Y = qY_plot;
+for i = 1:numRobots
+    all_X = [all_X; robotPaths{i}(:,1)];
+    all_Y = [all_Y; robotPaths{i}(:,2)];
+end
+globalXLim = [min(all_X)-5, max(all_X)+5];
+globalYLim = [min(all_Y)-5, max(all_Y)+5];
+
+% 2. DEFINE STAGES
+percentages = [0.25, 0.50, 0.75, 1.00];
+titles = {'25% Evolution', '50% Evolution', '75% Evolution', '100% Evolution'};
+
+% 3. CREATE TILED LAYOUT
+% 'compact' minimizes space between plots
+tlo = tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+for k = 1:4
+    nexttile;
+    hold on; box on;
+    axis equal;
+    
+    % Set font size first so ticks and labels match
+    set(gca, 'FontSize', 10);
+    
+    % Determine the end index for this percentage
+    limitIdx = floor(percentages(k) * simSteps);
+    limitIdx = max(1, limitIdx); 
+    
+    % --- Plot Queen ---
+    plot(qX_plot(1:limitIdx), qY_plot(1:limitIdx), 'k-', ...
+        'LineWidth', 2.0, 'DisplayName', 'Queen');
+    
+    % --- Plot Robots ---
+    for i = 1:numRobots
+        plot(robotPaths{i}(1:limitIdx, 1), robotPaths{i}(1:limitIdx, 2), ...
+            'Color', colors(i,:), 'LineWidth', 1.2, 'DisplayName', sprintf('Agent %d', i));
+    end
+    
+    % --- Styling ---
+    xlim(globalXLim);
+    ylim(globalYLim);
+    title(titles{k});
+    
+    % --- CONDITIONAL LABELS ---
+    
+    % 1. Y-Axis Label: Only for Left Column (Plots 1 & 3)
+    if mod(k, 2) ~= 0 
+        ylabel('Y Position (cm)');
+    end
+    
+    % 2. X-Axis Label: Only for Bottom Row (Plots 3 & 4)
+    if k > 2
+        xlabel('X Position (cm)');
+    end
+    
+    % --- Legend Logic ---
+    % Only add the legend to the final plot (100%)
+    if k == 1
+        lgd = legend('show', 'Location', 'southeast');
+        lgd.FontSize = 8;
+        lgd.ItemTokenSize = [10 8];
+    end
+end
+
+
+%% --- PLOT 4: FORMATION ERROR ---
 figure(4);
 set(gcf, 'Position', figSize);
 hold on; box on
@@ -60,14 +124,14 @@ for i = 1:numRobots
     plot(time_plot, distError, 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
-ylabel('Distance to Queen (cm)');
+ylabel('Euclidean Distance to Queen (cm)');
 xlim([0, 107.764537600000]);
 % title('Formation Error');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
 lgd.FontSize = 8;        % try 6–9
 lgd.ItemTokenSize = [10 8];
 
-% --- PLOT 5: X & Y POSITIONS (Subplots) ---
+%% --- PLOT 5: X & Y POSITIONS (Subplots) ---
 figure(5);
 set(gcf, 'Position', [100, 100, 600, 600]); 
 % Subplot 1: X Positions
@@ -96,10 +160,8 @@ ylabel('Y Position (cm)');
 xlim([0, 107.764537600000]);
 % title('Y Position Tracking');
 % legend('show', 'Location', 'northeast', 'NumColumns', 2);
-% ==========================================================
-%      ADD/REPLACE THIS BLOCK FOR FIGURE 6
-% ==========================================================
-% --- PLOT 6: SNAPSHOTS WITH OVALS (HORIZONTAL LAYOUT) ---
+
+%% --- PLOT 6: SNAPSHOTS WITH OVALS (HORIZONTAL LAYOUT) ---
 figure(6);
 set(gcf, 'Position', [100, 100, 1200, 400]); 
 
@@ -127,10 +189,14 @@ for k = 1:3
     hold on; box on;
     axis equal;
     
-    % Set Axes Font Size to match standard MATLAB defaults (usually 10-11)
+    % Set Axes Font Size
     set(gca, 'FontSize', 10, 'LineWidth', 1); 
     
     idx = snapshotIndices(k);
+    
+    % --- NEW: PLOT QUEEN TRAJECTORY (History up to idx) ---
+    % Plot this first so it appears *under* the ovals
+    plot(qX_plot(1:idx), qY_plot(1:idx), 'k-', 'LineWidth', 1.0, 'HandleVisibility', 'off');
     
     % --- PLOT QUEEN (Black Oval) ---
     qX = qX_plot(idx);
@@ -202,17 +268,15 @@ for k = 1:3
     xlabel('X Position (cm)');
     title(sprintf('t = %.2fs', time_plot(idx)));
     
-    % Y-Axis Logic: Show label only on first plot
+    % Y-Axis Logic: Show label only on first plot, BUT keep numbers on all
     if k == 1
         ylabel('Y Position (cm)');
-    else
-        set(gca, 'YTickLabel', []);
     end
-
-    % --- LEGEND STYLING (MATCHING YOUR REFERENCE) ---
+    
+    % --- LEGEND STYLING ---
     lgd = legend('show', 'Location', 'northeast');
-    lgd.FontSize = 8;          % Matches your reference
-    lgd.ItemTokenSize = [10 8]; % Matches your reference
+    lgd.FontSize = 8;          
+    lgd.ItemTokenSize = [10 8]; 
 end
 
 % --- REPORT TIMESTAMPS ---
