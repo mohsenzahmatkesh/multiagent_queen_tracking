@@ -1,3 +1,4 @@
+clc
 close all
 % figure(1);
 % % --- PLOT 1: PATHS ---
@@ -8,6 +9,7 @@ close all
 
 %% --- PLOT 2: ANGLE TRACKING ---
 figure(2); 
+figSize = 
 set(gcf, 'Position', figSize);
 hold on; box on
 colors = lines(numRobots);
@@ -124,7 +126,7 @@ for i = 1:numRobots
     plot(time_plot, distError, 'Color', colors(i,:), 'LineWidth', 1.5, 'DisplayName', sprintf('Agent %d', i));
 end
 xlabel('Time (s)');
-ylabel('Distance to Queen (cm)');
+ylabel('Euclidean Distance to Queen (cm)');
 xlim([0, 107.764537600000]);
 % title('Formation Error');
 lgd = legend('show', 'Location', 'northeast', 'NumColumns', 4);
